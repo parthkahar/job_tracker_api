@@ -1,3 +1,16 @@
+
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
+import requests
+
+
+load_dotenv()
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+
+
 def build_followup_prompt(company_name: str, job_title: str, status: str, notes: str) -> str:
     prompt = f"""
 Write a professional follow-up message for a job application.
@@ -15,13 +28,17 @@ Keep the message polite, short and professional.
 def generate_followup(company_name: str, job_title: str, status: str, notes: str) -> str:
     prompt = build_followup_prompt(company_name, job_title, status, notes)
 
-    followup_text = f"""
-Hey, here is the follow-up for {company_name} and {job_title}.
+    url = "http://localhost:11434/api/generate"
 
-Status: {status}
-Notes: {notes}
+    payload = {
+        "model": "llama3.2:3b",
+        "prompt": prompt,
+        "stream": False
+    }
 
-Prompt created successfully:
-{prompt}
-"""
-    return followup_text.strip()
+    response = requests.post(url, json=payload)
+
+    if response.status_code == 200:
+        return response.json()["response"]
+    else:
+        return "Error: Unable to generate follow-up"
