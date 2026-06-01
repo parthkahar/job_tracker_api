@@ -1,15 +1,4 @@
-
-import os
-from dotenv import load_dotenv
-from openai import OpenAI
 import requests
-
-
-load_dotenv()
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
 
 def build_followup_prompt(company_name: str, job_title: str, status: str, notes: str) -> str:
     prompt = f"""

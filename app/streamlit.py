@@ -4,12 +4,12 @@ import ollama
 
 API_URL="http://localhost:8000"
 
-st.tittle=("Job Application Tracker")
+st.title=("Job Application Tracker")
 st.write("Track all your job application in one place")
 
 st.subheader("My applications")
 response=requests.get(f"{API_URL}/applications")
-jobs=response.json()
+jobs=response.json().get("data", [])
 
 if jobs:
     st.dataframe(jobs)
@@ -84,8 +84,54 @@ if analyse_btn:
         st.subheader("analysis Result")
         st.markdown(response["message"]["content"])
 
-        st.download_button(
+        st.download_button( 
             label="Download Analysis",
             data=response["message"]["content"],
             file_name="jd.txt"
         )
+
+st.divider()
+st.subheader("📝 Cover Letter Generator")
+
+cover_jd =st.text_area("Paste Job Description",height=200)
+background=st.text_area("write something about yourself")
+
+
+generator=st.button("Generate Cover Letter")
+
+
+if generator:
+    if cover_jd.strip() == "" or background.strip() == "":
+        st.warning("bro i think you are missing something input please check it")
+
+    else:
+        response = ollama.chat(
+            model="llama3.2:3b",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"""
+You are a professional cover letter writer.
+Based on this job description and candidate background, 
+write a professional cover letter.
+Maximum 50 words. Be concise and impactful.
+
+Job Description: {cover_jd}
+Candidate Background: {background}
+
+Write only the cover letter. No explanation.
+"""
+                }
+            ]
+        )
+
+        st.subheader("Your Cover Letter")
+        st.markdown(response["message"]["content"])
+
+        st.download_button(
+            label="Download Cover Letter",
+            data=response["message"]["content"],
+            file_name="cover_letter.txt"
+        )
+
+
