@@ -46,7 +46,7 @@ with st.form("add_job_form"):
                 st.error("Something Went Wrong")
         else:
             st.warning("please fill company name and job title")            
-7
+
 
 
 st.divider()
@@ -135,3 +135,83 @@ Write only the cover letter. No explanation.
         )
 
 
+
+st.divider()
+st.subheader("🗑️ Delete Job")
+
+delete_id=st.number_input("Enter Job id to delete",min_value=1,step=1)
+delete_btn =st.button("Delete Job")
+
+if delete_btn:
+    response=requests.delete(f"{API_URL}/applications/{int(delete_id)}")
+
+    if response.status_code==200:
+        st.success("Application Deleted!!!")
+        st.rerun()
+
+    else:
+        st.error("something went wrong")
+
+
+st.divider()
+st.subheader("Job id Satus updater")
+
+job_id=st.number_input("enter your JOB ID",min_value=1,step=1)
+
+job_status=st.selectbox("status",
+                        ["applied","interview","offer","rejected"],
+                        key="update_status_select"
+                        )
+
+update_btn=st.button("update Job Status")
+
+
+if update_btn:
+    if job_id <0:
+        st.warning("enter Valid Job ID")
+    else:
+        response=requests.patch(f"{API_URL}/applications/{int(job_id)}/status", 
+                                json={"status": job_status}
+        )
+
+        if response.status_code==200:
+            st.success("application Updated")
+            st.rerun()
+
+        else:
+            st.error("id doesnot exists ")
+
+
+
+
+st.divider()
+st.subheader("Followup Generator")
+
+company_name=st.text_input("company name")
+job_title=st.text_input("Job title pls")
+status=st.selectbox("status",
+                    ["applied","interview","offer","rejected"],
+                    key="followup_status_select"
+                    )
+notes_=st.text_area("notes")
+
+follow_up_btn=st.button("followup")
+
+if follow_up_btn:
+    response=requests.post(
+        f"{API_URL}/ai/followup",
+        json={
+
+            "company_name": company_name,
+            "job_title": job_title,
+            "status": status,
+            "notes": notes_
+        }
+    )
+
+    if response.status_code ==200:
+        result = response.json()
+        st.markdown(result["followup"])
+
+    else:
+        st.error("failed:(")
