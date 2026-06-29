@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import ollama
+import fitz
 
 API_URL="http://localhost:8000"
 
@@ -46,93 +47,6 @@ with st.form("add_job_form"):
                 st.error("Something Went Wrong")
         else:
             st.warning("please fill company name and job title")            
-
-
-
-st.divider()
-st.subheader(" JD Analyser")
-
-
-jd_text=st.text_area("paste job description here",height =200)
-
-analyse_btn=st.button("analyse jd")
-
-if analyse_btn:
-    if jd_text.strip()=="":
-        st.warning("bro enter something ")
-
-    else:
-        response=ollama.chat(
-            model="llama3.2:3b",
-            messages=[{
-
-            "role":"user",
-            "content": f"""
-            Extract from this job description:
-            1. Required skills as a list
-            2. Nice to have skills as a list
-            3. Fit score out of 10 for a Python backend developer
-
-            Return JSON only. No extra text. No explanation.
-
-            Job Description:
-            {jd_text}
-            """}
-            ]
-        )
-            
-        st.subheader("analysis Result")
-        st.markdown(response["message"]["content"])
-
-        st.download_button( 
-            label="Download Analysis",
-            data=response["message"]["content"],
-            file_name="jd.txt"
-        )
-
-st.divider()
-st.subheader("📝 Cover Letter Generator")
-
-cover_jd =st.text_area("Paste Job Description",height=200)
-background=st.text_area("write something about yourself")
-
-
-generator=st.button("Generate Cover Letter")
-
-
-if generator:
-    if cover_jd.strip() == "" or background.strip() == "":
-        st.warning("bro i think you are missing something input please check it")
-
-    else:
-        response = ollama.chat(
-            model="llama3.2:3b",
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"""
-You are a professional cover letter writer.
-Based on this job description and candidate background, 
-write a professional cover letter.
-Maximum 50 words. Be concise and impactful.
-
-Job Description: {cover_jd}
-Candidate Background: {background}
-
-Write only the cover letter. No explanation.
-"""
-                }
-            ]
-        )
-
-        st.subheader("Your Cover Letter")
-        st.markdown(response["message"]["content"])
-
-        st.download_button(
-            label="Download Cover Letter",
-            data=response["message"]["content"],
-            file_name="cover_letter.txt"
-        )
 
 
 
@@ -215,3 +129,127 @@ if follow_up_btn:
 
     else:
         st.error("failed:(")
+
+
+st.divider()
+st.subheader("Upload Your Resume")
+
+resume = st.file_uploader("Upload your PDF ", type =["pdf"])
+
+resume_text=""
+if resume is not None:
+    with fitz.open(stream=resume.read(),filetype="pdf") as doc:
+        for page in doc:
+            resume_text += page.get_text()
+
+    st.success("resume uploaded successfully")
+    st.text_area(
+       "extracted resume text",
+       resume_text,
+       height =300
+   )
+    
+
+
+st.divider()
+st.subheader("📝 Cover Letter Generator")
+
+cover_jd =st.text_area("Paste Job Description",height=200)
+#background=st.text_area("write something about yourself")
+
+
+generator=st.button("Generate Cover Letter")
+
+
+if generator:
+    if cover_jd.strip() == "":
+        st.warning("bro i think you are missing something input please check it")
+
+    elif not resume_text:
+        st.warning("i think resume is missing buddy")
+
+    else:
+        response = ollama.chat(
+            model="llama3.2:3b",
+            messages=[
+                {
+                    "role": "user",
+                    "content": f"""
+                You are a professional cover letter writer.
+                Based on this job description and candidate background, 
+                write a professional cover letter.
+                Maximum 50 words. Be concise and impactful.
+
+                Job Description: {cover_jd}
+                Candidate Background: {resume_text}
+
+                Write only the cover letter. No explanation.
+                """
+                }
+            ]
+        )
+
+        st.subheader("Your Cover Letter")
+        st.markdown(response["message"]["content"])
+
+        st.download_button(
+            label="Download Cover Letter",
+            data=response["message"]["content"],
+            file_name="cover_letter.txt"
+        )
+
+
+
+
+
+
+
+
+
+
+st.divider()
+st.subheader(" JD Analyser")
+
+
+jd_text=st.text_area("paste job description here",height =200)
+
+analyse_btn=st.button("analyse jd")
+
+if analyse_btn:
+    if jd_text.strip()=="":
+        st.warning("bro enter something ")
+
+    elif not resume_text:
+        st.warning("please Upload your resume first ")
+    else:
+        response=ollama.chat(
+            model="llama3.2:3b",
+            messages=[{
+
+            "role":"user",
+            "content":f"""
+            You are a career advisor.
+            Compare this job description against the candidate's resume
+            dont give me big big output just give me short and simple output
+
+            Job Description: {jd_text}
+
+            Candidate Resume: {resume_text}
+
+            Return:
+            1. Skills candidate HAS that match the JD in short
+            2. Skills candidate is MISSING
+            3. Fit score out of 10 based on actual resume
+            4. give candidate a reality check that he or she should work on the missing skill
+            """}
+            ]
+        )
+            
+        st.subheader("analysis Result")
+        st.markdown(response["message"]["content"])
+
+        st.download_button( 
+            label="Download Analysis",
+            data=response["message"]["content"],
+            file_name="jd.txt"
+        )
